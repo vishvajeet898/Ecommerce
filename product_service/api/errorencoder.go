@@ -22,10 +22,21 @@ func encodeErrorResponse(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusUnauthorized)
 	case errUserNotFound:
 		w.WriteHeader(http.StatusNotFound)
-	case errUserAlreadyExists:
+	case errUnableToAddProduct:
 		w.WriteHeader(http.StatusConflict)
+	case errUnableToAddProductItem:
+		w.WriteHeader(http.StatusConflict)
+	case errUnableToCreateVariant:
+		w.WriteHeader(http.StatusConflict)
+	case errUnableToCreateVariantValue:
+		w.WriteHeader(http.StatusConflict)
+	case errProductNotFound:
+		w.WriteHeader(http.StatusNotFound)
+	case errUnableToUpdate:
+		w.WriteHeader(http.StatusConflict)
+	case errNoAuthorizationToken:
+		w.WriteHeader(http.StatusUnauthorized)
 	}
-
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": err.Error(),
 	})

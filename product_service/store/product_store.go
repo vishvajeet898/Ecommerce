@@ -8,7 +8,7 @@ type ProductStore interface {
 	Create(product models.Products) error
 	GetOne(product models.Products) (models.Products, error)
 	UpdateOne(product models.Products) error
-	//GetMany(models.Products, QueryFilter) ([]interface{}, error)
+	GetMany(product models.Products) ([]models.Products, error)
 }
 
 func (e *EntityStore) Create(product models.Products) error {
@@ -25,4 +25,10 @@ func (e *EntityStore) GetOne(product models.Products) (models.Products, error) {
 func (e *EntityStore) UpdateOne(product models.Products) error {
 	err := e.DB.Save(&product).Error
 	return err
+}
+
+func (e *EntityStore) GetMany(product models.Products) ([]models.Products, error) {
+	var dbProducts []models.Products
+	err := e.DB.Find(&dbProducts).Error
+	return dbProducts, err
 }

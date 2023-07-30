@@ -3,6 +3,7 @@ package api
 import (
 	"Ecommerce/product_service/models"
 	"Ecommerce/product_service/store"
+	"fmt"
 	"github.com/google/uuid"
 )
 
@@ -25,20 +26,15 @@ func NewProductStoreApi(storeDependency store.Dependency) *ProductStore {
 }
 
 type ProductService interface {
-	//JWT Admin
 	CreateProduct(models.AddProductRequest) error
-	//JWT Admin
 	CreateProductItem(models.AddProductItemRequest) error
+	GetAllProduct() (*models.GetAllProductsResponse, error)
 	GetAllProductItems() (*models.GetAllProductItemsResponse, error)
 	GetProductItemByItemID(request models.GetProductItemByIDRequest) (*models.GetProductItemByIDResponse, error)
-	GetAllProductVariantByVariantIDs(models.GetAllProductItemsByVariantIDRequest) (*models.GetAllProductItemsByVariantIDResponse, error)
+	GetAllProductItemsByVariantValueID(models.GetAllProductItemsByVariantValueIDRequest) (*models.GetAllProductItemsByVariantIDResponse, error)
 	GetAllVariantValueByProductID(request models.GetAllVariantValueByProductIDRequest) (*models.GetAllVariantValueByProductIDResponse, error)
-	//TODO
-	//UpdateProductItem(models.UpdateProductItemRequest) error
-
-	//DeleteProductItem(request models.DeleteProductItemRequest) error
-	//GetAllProducts() (*[]models.GetAllProductItemsResponse, error)
-	//DeleteProduct(request models.DeleteProductRequest) error
+	UpdateProduct(models.UpdateProductRequest) (*models.UpdateProductResponse, error)
+	UpdateProductItem(models.UpdateProductItemRequest) (*models.UpdateProductItemResponse, error)
 }
 
 func (productstore *ProductStore) CreateProduct(addProductRequest models.AddProductRequest) error {
@@ -48,22 +44,8 @@ func (productstore *ProductStore) CreateProduct(addProductRequest models.AddProd
 		ProductName: addProductRequest.Name,
 	}
 	if err := productstore.ProductStore.Create(product); err != nil {
-		//TODO Err encode
-		return err
+		return errUnableToAddProduct
 	}
-
-	//Create Product Item
-	/*	productItem := models.ProductItems{
-			ProductItemId: uuid.New().String(),
-			ProductId:     product.ProductID,
-			Name:          addProductRequest.Name,
-			Price:         addProductRequest.Price,
-			Units:         addProductRequest.Units,
-		}
-		if err := productstore.ProductItemStore.CreateItem(productItem); err != nil {
-			//TODO Err encode
-			return err
-		}*/
 
 	for _, variant := range addProductRequest.Variants {
 
@@ -74,10 +56,10 @@ func (productstore *ProductStore) CreateProduct(addProductRequest models.AddProd
 			VariantName:      variant.VariantName,
 		}
 		if err := productstore.ProductVariantStore.CreateVariant(productVariant); err != nil {
-			//TODO Err encode
-			return err
+			return errUnableToCreateVariant
 		}
 
+		//Create Variant Value
 		for _, variantValue := range variant.VariantValues {
 			productVariantValue := models.ProductVariantValues{
 				ProductVariantValueID: uuid.New().String(),
@@ -85,11 +67,9 @@ func (productstore *ProductStore) CreateProduct(addProductRequest models.AddProd
 				ProductVariantValue:   variantValue,
 			}
 			if err := productstore.ProductVariantValueStore.CreateVariantValue(productVariantValue); err != nil {
-				//TODO Err encode
-				return err
+				return errUnableToCreateVariantValue
 			}
 		}
-		//Create Variant Value
 
 	}
 
@@ -103,10 +83,10 @@ func (productstore *ProductStore) CreateProductItem(addProductItemRequest models
 		ProductId:     addProductItemRequest.ProductId,
 		Name:          addProductItemRequest.Name,
 		Price:         addProductItemRequest.Price,
+		Units:         addProductItemRequest.Units,
 	}
 	if err := productstore.ProductItemStore.CreateItem(productItem); err != nil {
-		//TODO Err encode
-		return err
+		return errUnableToAddProductItem
 	}
 
 	//Now for each variant add it in combination
@@ -118,8 +98,7 @@ func (productstore *ProductStore) CreateProductItem(addProductItemRequest models
 		}
 
 		if err := productstore.ProductVariantCombinationStore.CreateCombination(productVariantCombination); err != nil {
-			//TODO Err encode
-			return err
+			return errUnableToAddProductItem
 		}
 	}
 
@@ -127,20 +106,10 @@ func (productstore *ProductStore) CreateProductItem(addProductItemRequest models
 }
 
 func (productstore *ProductStore) GetAllProductItems() (*models.GetAllProductItemsResponse, error) {
-	dbProductItems, err := productstore.ProductItemStore.GetAllItems()
+	dbProductItems, err := productstore.ProductItemStore.GetAllItems(store.QueryFilter{})
 	if err != nil {
-		return nil, err
+		return nil, errInternalServerError
 	}
-
-	/*	productItems := make([]models.ProductItem, 0)
-		for _, productItem := range dbProductItems {
-			productItems = append(productItems, models.ProductItem{
-				ProductID: productItem.ProductId,
-				ProductItemID: productItem.ProductItemId
-				Name:      productItem.Name,
-				Price:     productItem.Price,
-			})
-		}*/
 
 	getAllProductItemsResponse := models.GetAllProductItemsResponse{
 		Items: dbProductItems,
@@ -148,19 +117,19 @@ func (productstore *ProductStore) GetAllProductItems() (*models.GetAllProductIte
 	return &getAllProductItemsResponse, nil
 }
 
-func (productstore *ProductStore) GetAllProductVariantByVariantIDs(request models.GetAllProductItemsByVariantIDRequest) (*models.GetAllProductItemsByVariantIDResponse, error) {
+func (productstore *ProductStore) GetAllProductItemsByVariantValueID(request models.GetAllProductItemsByVariantValueIDRequest) (*models.GetAllProductItemsByVariantIDResponse, error) {
 
 	querryFiler := store.QueryFilter{
 		Table: "product_items",
-		Rows:  "product_items.product_item_id, product_items.name, product_items.price,product_variation_combinations.product_variant_value_id",
-		Join:  "inner join product_variation_combinations on product_items.product_item_id = product_variation_combinations.product_item_id",
-		Where: "product_variation_combinations.product_variant_value_id = " + request.VariantId,
+		Rows:  "product_items.product_item_id, product_items.name, product_items.price,product_variant_combinations.product_variant_value_id",
+		Join:  "inner join product_variant_combinations on product_items.product_item_id = product_variant_combinations.product_item_id",
+		Where: "product_variant_combinations.product_variant_value_id = '" + request.VariantValueId + "';",
 	}
 
-	//TODO ErrorEncoder
 	productVariants, err := productstore.ProductVariantValueStore.GetManyVariantValues(querryFiler)
 	if err != nil {
-		return nil, err
+
+		return nil, errInternalServerError
 	}
 
 	return &models.GetAllProductItemsByVariantIDResponse{
@@ -174,8 +143,9 @@ func (productstore *ProductStore) GetProductItemByItemID(getProductItemByIDReque
 	}
 	dbProductItem, err := productstore.ProductItemStore.GetOneItem(productItem)
 	if err != nil {
-		return nil, err
+		return nil, errProductNotFound
 	}
+
 	return &models.GetProductItemByIDResponse{
 		ProductItem: dbProductItem,
 	}, nil
@@ -190,10 +160,13 @@ func (productstore *ProductStore) GetAllVariantValueByProductID(getAllVariantVal
 		Where: "product_variants.product_id = '" + getAllVariantValueByProductIDRequest.ProductID + "'",
 	}
 
-	//TODO ErrorEncoder
 	productVariants, err := productstore.ProductVariantStore.GetManyVariants(querryFiler)
 	if err != nil {
-		return nil, err
+		return nil, errInternalServerError
+	}
+
+	if len(productVariants) == 0 {
+		return nil, errProductNotFound
 	}
 
 	return &models.GetAllVariantValueByProductIDResponse{
@@ -201,33 +174,135 @@ func (productstore *ProductStore) GetAllVariantValueByProductID(getAllVariantVal
 	}, nil
 }
 
-/*func (productstore *ProductStore) UpdateProductItem(models.UpdateProductItemRequest) error {
-	//Create ProductItems
+func (productstore *ProductStore) UpdateProduct(updateProductItemRequest models.UpdateProductRequest) (*models.UpdateProductResponse, error) {
 
-	productItem := models.ProductItems{
-		ProductItemId: uuid.New().String(),
-		ProductId:     addProductItemRequest.ProductId,
-		Name:          addProductItemRequest.Name,
-		Price:         addProductItemRequest.Price,
-	}
-	if err := productstore.ProductItemStore.CreateItem(productItem); err != nil {
-		//TODO Err encode
-		return err
+	product := models.Products{
+		ProductID:   updateProductItemRequest.ProductId,
+		ProductName: updateProductItemRequest.Name,
 	}
 
-	//Now for each variant add it in combination
-	//For Optimization, we can have bulk inserts
-	for _, varaintValueID := range addProductItemRequest.VariantValueIDs {
-		productVariantCombination := models.ProductVariantCombinations{
-			ProductItemId:         productItem.ProductItemId,
-			ProductVariantValueID: varaintValueID,
+	//Updated the product
+	err := productstore.ProductStore.UpdateOne(product)
+	if err != nil {
+		return nil, errUnableToUpdate
+	}
+
+	for _, variant := range updateProductItemRequest.Variants {
+		//Updated the Variant Name
+		productVariant := models.ProductVariants{
+			ProductVariantID: variant.VariantID,
+			ProductID:        updateProductItemRequest.ProductId,
+			VariantName:      variant.VariantName,
+		}
+		if err := productstore.ProductVariantStore.UpdateOneVariant(productVariant); err != nil {
+			return nil, errUnableToUpdate
 		}
 
-		if err := productstore.ProductVariantCombinationStore.CreateCombination(productVariantCombination); err != nil {
-			//TODO Err encode
-			return err
+		for _, variantValue := range variant.VariantValues {
+			//Updated the Variant Value
+			variantValue := models.ProductVariantValues{
+				ProductVariantID:      variant.VariantID,
+				ProductVariantValueID: variantValue.VariantValueID,
+				ProductVariantValue:   variantValue.VariantValue,
+			}
+
+			if err := productstore.ProductVariantValueStore.UpdateOneVariantValue(variantValue); err != nil {
+				return nil, errUnableToUpdate
+			}
+
 		}
+
 	}
 
-	return nil
-}*/
+	return &models.UpdateProductResponse{Ok: nil}, nil
+}
+
+func (productstore *ProductStore) UpdateProductItem(updateProductItemRequest models.UpdateProductItemRequest) (*models.UpdateProductItemResponse, error) {
+
+	//Check if it exists
+	productItem, err := productstore.ProductItemStore.GetOneItem(models.ProductItems{ProductItemId: updateProductItemRequest.ProductItemId})
+	if err != nil {
+		//Product does not exist
+		return nil, errProductNotFound
+	}
+
+	product := models.ProductItems{
+		ProductItemId: updateProductItemRequest.ProductItemId,
+		Price:         updateProductItemRequest.Price,
+		Units:         updateProductItemRequest.Units,
+		Name:          updateProductItemRequest.Name,
+		ProductId:     productItem.ProductId,
+	}
+
+	fmt.Printf("Product = \n%v", product)
+
+	//Updated the product
+	err = productstore.ProductItemStore.UpdateOneItem(product)
+	if err != nil {
+		return nil, errUnableToUpdate
+	}
+
+	return &models.UpdateProductItemResponse{
+		Ok: nil,
+	}, nil
+}
+
+func (productstore *ProductStore) GetAllProduct() (*models.GetAllProductsResponse, error) {
+
+	//Get all the products
+	productItems, err := productstore.ProductStore.GetMany(models.Products{})
+	if err != nil {
+		return nil, errInternalServerError
+	}
+	if len(productItems) == 0 {
+		return nil, errProductNotFound
+	}
+
+	product := make([]models.Product, 0)
+	for _, productItem := range productItems {
+
+		//Now get all the product Variants
+		querryFiler := store.QueryFilter{
+			Table: "product_variant_values",
+			Rows:  "product_variants.product_variant_id, product_variants.variant_name, product_variant_values.product_variant_value_id,  product_variant_values.product_variant_value",
+			Join:  "inner join product_variants on product_variant_values.product_variant_id = product_variants.product_variant_id",
+			Where: "product_variants.product_id = '" + productItem.ProductID + "'",
+		}
+		productVariants, err := productstore.ProductVariantStore.GetManyVariants(querryFiler)
+		if err != nil {
+			return nil, errInternalServerError
+		}
+
+		if len(productVariants) == 0 {
+			return nil, errProductNotFound
+		}
+
+		//Now get all the productItems
+		/*productItem := models.ProductItems{
+			ProductId: productItem.ProductID,
+		}*/
+
+		productItemQueryFiler := store.QueryFilter{
+			Where: "product_items.product_id = '" + productItem.ProductID + "'",
+		}
+		dbProductItems, err := productstore.ProductItemStore.GetAllItems(productItemQueryFiler)
+		if err != nil {
+			return nil, errInternalServerError
+		}
+
+		if len(dbProductItems) == 0 {
+			return nil, errProductNotFound
+		}
+
+		product = append(product, models.Product{
+			ProductID:    productItem.ProductID,
+			Name:         productItem.ProductName,
+			Variants:     productVariants,
+			ProductItems: dbProductItems,
+		})
+	}
+
+	return &models.GetAllProductsResponse{
+		Products: product,
+	}, nil
+}

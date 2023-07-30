@@ -8,6 +8,7 @@ type OrderItemStore interface {
 	UpdateOneItem(models.OrderItems) error
 	GetAllItem(models.OrderItems) ([]models.OrderItems, error)
 	DeleteItem(models.OrderItems) error
+	DeleteAllItem(models.OrderItems) error
 }
 
 func (e *EntityStore) CreateItem(orderItem models.OrderItems) error {
@@ -34,5 +35,10 @@ func (e *EntityStore) GetAllItem(orderItem models.OrderItems) ([]models.OrderIte
 
 func (e *EntityStore) DeleteItem(orderItem models.OrderItems) error {
 	err := e.DB.Delete(&orderItem).Error
+	return err
+}
+
+func (e *EntityStore) DeleteAllItem(orderItem models.OrderItems) error {
+	err := e.DB.Where(orderItem).Delete(&models.OrderItems{}).Error
 	return err
 }

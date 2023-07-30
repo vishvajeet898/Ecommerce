@@ -6,7 +6,6 @@ import (
 	"Ecommerce/cart_service/store"
 	modelOrder "Ecommerce/order_service/models"
 	models2 "Ecommerce/product_service/models"
-	"fmt"
 	"github.com/google/uuid"
 	"strconv"
 )
@@ -24,16 +23,10 @@ func NewCartStoreApi(storeDependency store.Dependency, orderExternalDependency e
 }
 
 type CartService interface {
-	//JWT USER
 	AddCartItem(models.AddCartItemRequest) (*models.AddCartItemResponse, error)
-	//JWT USER
 	RemoveCartItemByID(models.RemoveCartItemRequest) (*models.RemoveCartItemResponse, error)
-	//JWT USER
 	GetAllCartItemsByUserID(models.GetAllCartItemRequest) (*models.GetAllCartItemResponse, error)
-	//JWT USER
 	UpdateCartItemByID(models.UpdateCartItemRequest) (*models.UpdateCartItemResponse, error)
-	//JWT USER
-	//TODO empty the cart
 	PlaceOrder(request models.PlaceOrderRequest) (*models.PlaceOrderResponse, error)
 }
 
@@ -45,14 +38,14 @@ func (cartstore *CartStore) AddCartItem(addCartItemRequest models.AddCartItemReq
 	dbProductItem, err := cartstore.OrderExternalDependency.ProductService.GetProductItemByItemID(productItem)
 
 	if err != nil {
-		return nil, err
+		return nil, errProductItemNotFound
 	}
 
 	//TODO change value of quantity to INT in DB
 	quantity, err := strconv.Atoi(addCartItemRequest.Quantity)
-	if dbProductItem.ProductItem.Units >= quantity {
+	if dbProductItem.ProductItem.Units <= quantity {
 		//TODO retun ErrQuantity less
-		return nil, err
+		return nil, errProductNotInStock
 	}
 
 	cartItem := models.CartItems{
@@ -63,7 +56,7 @@ func (cartstore *CartStore) AddCartItem(addCartItemRequest models.AddCartItemReq
 	}
 
 	if err := cartstore.CartItemStore.Create(cartItem); err != nil {
-		return nil, err
+		return nil, errUnableToCreateItem
 	}
 
 	return &models.AddCartItemResponse{
@@ -77,8 +70,17 @@ func (cartstore *CartStore) RemoveCartItemByID(removeCartItemRequest models.Remo
 		UserID:     removeCartItemRequest.UserID,
 		CartItemID: removeCartItemRequest.CartItemID,
 	}
+	dbCartItem, err := cartstore.CartItemStore.GetOne(cartItem)
+	if err != nil {
+		return nil, errCartItemNotFound
+	}
+
+	if dbCartItem.UserID != removeCartItemRequest.UserID {
+		return nil, errInvalidAttempt
+	}
+
 	if err := cartstore.CartItemStore.Delete(cartItem); err != nil {
-		return nil, err
+		return nil, errUnableToDeleteItem
 	}
 	return &models.RemoveCartItemResponse{
 		Error: nil,
@@ -86,12 +88,16 @@ func (cartstore *CartStore) RemoveCartItemByID(removeCartItemRequest models.Remo
 }
 
 func (cartstore *CartStore) GetAllCartItemsByUserID(getAllCartItemRequest models.GetAllCartItemRequest) (*models.GetAllCartItemResponse, error) {
-	cartItem := models.CartItems{
-		UserID: getAllCartItemRequest.UserID,
+
+	querryFiler := store.QueryFilter{
+		Table: "cart_items",
+		Rows:  "cart_items.cart_item_id, cart_items.product_item_id, cart_items.quantity, product_items.name, product_items.price",
+		Join:  "inner join product_items on cart_items.product_item_id = product_items.product_item_id",
+		Where: "cart_items.user_id = '" + getAllCartItemRequest.UserID + "';",
 	}
-	cartItems, err := cartstore.CartItemStore.GetAll(cartItem)
+	cartItems, err := cartstore.CartItemStore.GetAll(querryFiler)
 	if err != nil {
-		return nil, err
+		return nil, errInternalServerError
 	}
 
 	return &models.GetAllCartItemResponse{
@@ -106,7 +112,11 @@ func (cartstore *CartStore) UpdateCartItemByID(updateCartItemRequest models.Upda
 
 	//If errr then item either does not exist
 	if err != nil {
-		return nil, err
+		return nil, errItemNotFound
+	}
+
+	if dbCartItem.UserID != updateCartItemRequest.UserID {
+		return nil, errInvalidAttempt
 	}
 
 	cartItem := models.CartItems{
@@ -118,7 +128,7 @@ func (cartstore *CartStore) UpdateCartItemByID(updateCartItemRequest models.Upda
 
 	err = cartstore.CartItemStore.Update(cartItem)
 	if err != nil {
-		return nil, err
+		return nil, errUnableToUpdateItem
 	}
 
 	return &models.UpdateCartItemResponse{
@@ -132,13 +142,20 @@ func (cartstore *CartStore) PlaceOrder(placeOrderRequest models.PlaceOrderReques
 	cartItem := models.CartItems{
 		UserID: placeOrderRequest.UserID,
 	}
-	dbCartItems, err := cartstore.CartItemStore.GetAll(cartItem)
+
+	queryFiler := store.QueryFilter{
+		Table: "cart_items",
+		Rows:  "*",
+		Where: "cart_items.user_id = '" + placeOrderRequest.UserID + "';",
+	}
+
+	dbCartItems, err := cartstore.CartItemStore.GetAll(queryFiler)
 	if err != nil {
-		return nil, err
+		return nil, errInternalServerError
 	}
 
 	if len(dbCartItems) == 0 {
-		return nil, fmt.Errorf("Cart Empty")
+		return nil, errEmptyCart
 	}
 
 	productItems := make([]modelOrder.ProductItems, 0)
@@ -147,7 +164,7 @@ func (cartstore *CartStore) PlaceOrder(placeOrderRequest models.PlaceOrderReques
 		//optimization Get bulk select instead of loop
 		productItem, err := cartstore.OrderExternalDependency.ProductService.GetProductItemByItemID(models2.GetProductItemByIDRequest{ProductItemId: cartItem.ProductItemID})
 		if err != nil {
-			return nil, err
+			return nil, errProductItemNotFound
 		}
 
 		productItems = append(productItems, modelOrder.ProductItems{
@@ -165,15 +182,12 @@ func (cartstore *CartStore) PlaceOrder(placeOrderRequest models.PlaceOrderReques
 
 	placedOrder, err := cartstore.OrderExternalDependency.OrderService.CreateOrder(orderRequest)
 	if err != nil {
-		return nil, err
+		return nil, errInternalServerError
 	}
 
 	//Emptying Cart after placing order
-	/*cartItem := models.CartItems{
-		UserID: placeOrderRequest.UserID,
-	}*/
 	if err := cartstore.CartItemStore.DeleteAll(cartItem); err != nil {
-		return nil, err
+		return nil, errInternalServerError
 	}
 
 	return &models.PlaceOrderResponse{

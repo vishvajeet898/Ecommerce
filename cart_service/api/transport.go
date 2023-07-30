@@ -5,7 +5,6 @@ import (
 	"Ecommerce/middleware/jwt"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/go-playground/validator/v10"
@@ -34,9 +33,7 @@ func MakeOrderEndpoints(svc CartService) CartEndpoints {
 func makeAddCartItemEndpoint(svc CartService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.AddCartItemRequest)
-
 		req.UserID = ctx.Value("userID").(string)
-
 		response, err = svc.AddCartItem(req)
 		if err != nil {
 			return nil, err
@@ -48,9 +45,7 @@ func makeAddCartItemEndpoint(svc CartService) endpoint.Endpoint {
 func makeRemoveCartItemEndpoint(svc CartService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.RemoveCartItemRequest)
-
 		req.UserID = ctx.Value("userID").(string)
-
 		response, err = svc.RemoveCartItemByID(req)
 		if err != nil {
 			return nil, err
@@ -62,9 +57,7 @@ func makeRemoveCartItemEndpoint(svc CartService) endpoint.Endpoint {
 func makeGetAllCartItemByUserIDEndpoint(svc CartService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.GetAllCartItemRequest)
-
 		req.UserID = ctx.Value("userID").(string)
-
 		response, err = svc.GetAllCartItemsByUserID(req)
 		if err != nil {
 			return nil, err
@@ -76,9 +69,7 @@ func makeGetAllCartItemByUserIDEndpoint(svc CartService) endpoint.Endpoint {
 func makeUpdateCartItemByIDEndpoint(svc CartService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.UpdateCartItemRequest)
-
 		req.UserID = ctx.Value("userID").(string)
-
 		response, err = svc.UpdateCartItemByID(req)
 		if err != nil {
 			return nil, err
@@ -90,9 +81,7 @@ func makeUpdateCartItemByIDEndpoint(svc CartService) endpoint.Endpoint {
 func makePlaceOrderEndpoint(svc CartService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.PlaceOrderRequest)
-
 		req.UserID = ctx.Value("userID").(string)
-
 		response, err = svc.PlaceOrder(req)
 		if err != nil {
 			return nil, err
@@ -116,8 +105,7 @@ func decodeAddCartItemRequest(_ context.Context, r *http.Request) (request inter
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		//TODO return ERR
-		return nil, fmt.Errorf("no Authorization provided")
+		return nil, errAuthorizationFailed
 	}
 	addCartItemRequest.JWT = token
 
@@ -136,11 +124,9 @@ func decodeRemoveCartItemRequest(_ context.Context, r *http.Request) (request in
 	if err != nil {
 		return nil, errJsonValidation
 	}
-
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		//TODO return ERR
-		return nil, fmt.Errorf("no Authorization provided")
+		return nil, errAuthorizationFailed
 	}
 	removeCartItemRequest.JWT = token
 
@@ -149,21 +135,9 @@ func decodeRemoveCartItemRequest(_ context.Context, r *http.Request) (request in
 
 func decodeGetAllCartItemByUserIDRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	var getAllCartItemRequest models.GetAllCartItemRequest
-	/*if e := json.NewDecoder(r.Body).Decode(&getAllCartItemRequest); e != nil {
-		return nil, e
-	}
-
-	//Validating the fields of the struct
-	v := validator.New()
-	err = v.Struct(getAllCartItemRequest)
-	if err != nil {
-		return nil, errJsonValidation
-	}*/
-
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		//TODO return ERR
-		return nil, fmt.Errorf("no Authorization provided")
+		return nil, errAuthorizationFailed
 	}
 	getAllCartItemRequest.JWT = token
 	return getAllCartItemRequest, nil
@@ -184,8 +158,7 @@ func decodeUpdateCartItemByIDRequest(_ context.Context, r *http.Request) (reques
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		//TODO return ERR
-		return nil, fmt.Errorf("no Authorization provided")
+		return nil, errAuthorizationFailed
 	}
 	updateCartItemRequest.JWT = token
 	return updateCartItemRequest, nil
@@ -206,8 +179,7 @@ func decodePlacerOrderRequest(_ context.Context, r *http.Request) (request inter
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		//TODO return ERR
-		return nil, fmt.Errorf("no Authorization provided")
+		return nil, errAuthorizationFailed
 	}
 	placeOrderRequest.JWT = token
 	return placeOrderRequest, nil

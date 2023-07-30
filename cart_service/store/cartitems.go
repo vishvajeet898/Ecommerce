@@ -8,7 +8,7 @@ func (e *EntityStore) Create(cartItem models.CartItems) error {
 }
 
 func (e *EntityStore) Update(cartItem models.CartItems) error {
-	err := e.DB.Save(cartItem).Error
+	err := e.DB.Where(models.CartItems{CartItemID: cartItem.CartItemID}).First(&models.CartItems{}).Save(cartItem).Error
 	return err
 }
 
@@ -29,8 +29,14 @@ func (e *EntityStore) GetOne(cartItem models.CartItems) (models.CartItems, error
 	return dbCartItem, err
 }
 
-func (e *EntityStore) GetAll(cartItems models.CartItems) ([]models.CartItems, error) {
-	var dbCartItems []models.CartItems
-	err := e.DB.Where(cartItems).Find(&dbCartItems).Error
-	return dbCartItems, err
+func (e *EntityStore) GetAll(queryFilter QueryFilter) ([]models.CartItem_ProductItem, error) {
+	var cartItems []models.CartItem_ProductItem
+
+	if queryFilter.Join != "" {
+		err := e.DB.Table(queryFilter.Table).Select(queryFilter.Rows).Joins(queryFilter.Join).Where(queryFilter.Where).Find(&cartItems).Error
+		return cartItems, err
+	}
+	err := e.DB.Table(queryFilter.Table).Select(queryFilter.Rows).Where(queryFilter.Where).Find(&cartItems).Error
+
+	return cartItems, err
 }

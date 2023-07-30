@@ -18,18 +18,38 @@ type AddProductItemRequest struct {
 	Name            string   `json:"name"`
 	Price           string   `json:"price"`
 	ProductId       string   `json:"productId"`
+	Units           int      `json:"units"`
 	VariantValueIDs []string `json:"variantValueIDs"`
 }
 
-type GetAllProductItemsByVariantIDRequest struct {
-	VariantId string `json:"variant_id"`
+type GetAllProductItemsByVariantValueIDRequest struct {
+	VariantValueId string `json:"variantValueId"`
+}
+
+type VariantValuesUpdate struct {
+	VariantValueID string `json:"variantValueID"`
+	VariantValue   string `json:"variantValue"`
+}
+
+type VariantUpdate struct {
+	VariantID     string                `json:"variantID"`
+	VariantName   string                `json:"variantName"`
+	VariantValues []VariantValuesUpdate `json:"variantValue"`
+}
+type UpdateProductRequest struct {
+	JWT       string          `json:"JWT,omitempty"`
+	ProductId string          `json:"productItemId"`
+	Name      string          `json:"name"`
+	Price     string          `json:"price"`
+	Variants  []VariantUpdate `json:"variants"`
 }
 
 type UpdateProductItemRequest struct {
-	ProductItemId string    `json:"productItemId"`
-	Name          string    `json:"name"`
-	Price         string    `json:"price"`
-	Variants      []Variant `json:"variants"`
+	JWT           string `json:"JWT,omitempty"`
+	ProductItemId string `json:"productItemId"`
+	Name          string `json:"name"`
+	Units         int    `json:"units"`
+	Price         string `json:"price"`
 }
 
 type DeleteProductRequest struct {

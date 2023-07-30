@@ -28,11 +28,11 @@ func (e *EntityStore) UpdateOne(order models.Orders) error {
 
 func (e *EntityStore) GetAll(order models.Orders) ([]models.Orders, error) {
 	var dbOrders []models.Orders
-	err := e.DB.Where(order).Find(dbOrders).Error
+	err := e.DB.Where(order).Find(&dbOrders).Error
 	return dbOrders, err
 }
 
 func (e *EntityStore) Delete(order models.Orders) error {
-	err := e.DB.Delete(&order).Error
+	err := e.DB.Where(order).Delete(&models.Orders{}).Error
 	return err
 }

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"Ecommerce/middleware/jwt"
 	"Ecommerce/order_service/models"
 	"context"
 	"encoding/json"
@@ -30,6 +31,7 @@ func MakeOrderEndpoints(svc OrderService) OrderEndpoints {
 func makeCreateOrderEndpoint(svc OrderService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.CreateOrderRequest)
+		req.UserID = ctx.Value("userID").(string)
 		response, err = svc.CreateOrder(req)
 		if err != nil {
 			return nil, err
@@ -41,6 +43,7 @@ func makeCreateOrderEndpoint(svc OrderService) endpoint.Endpoint {
 func makeGetOrderByOrderIDEndpoint(svc OrderService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.GetOrderByOrderIDRequest)
+		req.UserID = ctx.Value("userID").(string)
 		response, err = svc.GetOrderByOrderID(req)
 		if err != nil {
 			return nil, err
@@ -52,6 +55,7 @@ func makeGetOrderByOrderIDEndpoint(svc OrderService) endpoint.Endpoint {
 func makeGetAllOrderByUserIDEndpoint(svc OrderService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.GetAllOrderByUserIDRequest)
+		req.UserID = ctx.Value("userID").(string)
 		response, err = svc.GetAllOrderByUserID(req)
 		if err != nil {
 			return nil, err
@@ -63,6 +67,7 @@ func makeGetAllOrderByUserIDEndpoint(svc OrderService) endpoint.Endpoint {
 func makeCancelOrderByOrderIDEndpoint(svc OrderService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.CancelOrderByOrderIDRequest)
+		req.UserID = ctx.Value("userID").(string)
 		response, err = svc.CancelOrderByOrderId(req)
 		if err != nil {
 			return nil, err
@@ -83,6 +88,13 @@ func decodeCreateOrderRequest(_ context.Context, r *http.Request) (request inter
 	if err != nil {
 		return nil, errJsonValidation
 	}
+
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		//TODO return ERR
+		return nil, errAuthorizationFailed
+	}
+	createOrderRequest.JWT = token
 	return createOrderRequest, nil
 }
 
@@ -98,12 +110,18 @@ func decodeGetOrderByOrderIDRequest(_ context.Context, r *http.Request) (request
 	if err != nil {
 		return nil, errJsonValidation
 	}
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		//TODO return ERR
+		return nil, errAuthorizationFailed
+	}
+	getOrderByOrderIDRequest.JWT = token
 	return getOrderByOrderIDRequest, nil
 }
 
 func decodeGetAllOrderByUserIDRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	var getAllOrderByUserIDRequest models.GetAllOrderByUserIDRequest
-	if e := json.NewDecoder(r.Body).Decode(&getAllOrderByUserIDRequest); e != nil {
+	/*if e := json.NewDecoder(r.Body).Decode(&getAllOrderByUserIDRequest); e != nil {
 		return nil, e
 	}
 
@@ -112,7 +130,13 @@ func decodeGetAllOrderByUserIDRequest(_ context.Context, r *http.Request) (reque
 	err = v.Struct(getAllOrderByUserIDRequest)
 	if err != nil {
 		return nil, errJsonValidation
+	}*/
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		//TODO return ERR
+		return nil, errAuthorizationFailed
 	}
+	getAllOrderByUserIDRequest.JWT = token
 	return getAllOrderByUserIDRequest, nil
 }
 
@@ -128,6 +152,12 @@ func decodeCancelOrderByOrderIDRequest(_ context.Context, r *http.Request) (requ
 	if err != nil {
 		return nil, errJsonValidation
 	}
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		//TODO return ERR
+		return nil, errAuthorizationFailed
+	}
+	cancelOrderByOrderIDRequest.JWT = token
 	return cancelOrderByOrderIDRequest, nil
 }
 
@@ -145,25 +175,25 @@ func NewHttpService(svcEndpoints OrderEndpoints, r *mux.Router) http.Handler {
 	//r := mux.NewRouter()
 
 	r.Methods("POST").Path("/order/add").Handler(httptransport.NewServer(
-		svcEndpoints.CreateOrder,
+		jwt.NewAuthMiddleware([]string{jwt.UserScope})(svcEndpoints.CreateOrder),
 		decodeCreateOrderRequest,
 		encodeResponse,
 	))
 
 	r.Methods("GET").Path("/order").Handler(httptransport.NewServer(
-		svcEndpoints.GetOrderByOrderID,
+		jwt.NewAuthMiddleware([]string{jwt.UserScope})(svcEndpoints.GetOrderByOrderID),
 		decodeGetOrderByOrderIDRequest,
 		encodeResponse,
 	))
 
-	r.Methods("GET").Path("/order/user").Handler(httptransport.NewServer(
-		svcEndpoints.GetAllOrderByUserID,
+	r.Methods("GET").Path("/orders").Handler(httptransport.NewServer(
+		jwt.NewAuthMiddleware([]string{jwt.UserScope})(svcEndpoints.GetAllOrderByUserID),
 		decodeGetAllOrderByUserIDRequest,
 		encodeResponse,
 	))
 
 	r.Methods("POST").Path("/order/user/cancel").Handler(httptransport.NewServer(
-		svcEndpoints.CancelOrderByOrderID,
+		jwt.NewAuthMiddleware([]string{jwt.UserScope})(svcEndpoints.CancelOrderByOrderID),
 		decodeCancelOrderByOrderIDRequest,
 		encodeResponse,
 	))

@@ -24,6 +24,15 @@ func encodeErrorResponse(_ context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusNotFound)
 	case errUserAlreadyExists:
 		w.WriteHeader(http.StatusConflict)
+	case errUnableToDeleteOrder:
+		w.WriteHeader(http.StatusConflict)
+	case errUnableToCreateOrder:
+		w.WriteHeader(http.StatusConflict)
+	case errOrderNotExist:
+		w.WriteHeader(http.StatusNotFound)
+	case errAuthorizationFailed:
+		w.WriteHeader(http.StatusUnauthorized)
+
 	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{

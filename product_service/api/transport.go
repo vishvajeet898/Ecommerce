@@ -5,7 +5,6 @@ import (
 	"Ecommerce/product_service/models"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/go-playground/validator/v10"
@@ -14,21 +13,24 @@ import (
 )
 
 type ProductEndpoints struct {
-	CreateProduct                   endpoint.Endpoint
-	CreateProductItem               endpoint.Endpoint
-	GetAllProductItems              endpoint.Endpoint
-	GetAllProductVariant            endpoint.Endpoint
-	GetAllProductVariantByVariantID endpoint.Endpoint
-	GetAllVariantValuesByProductID  endpoint.Endpoint
+	CreateProduct                    endpoint.Endpoint
+	CreateProductItem                endpoint.Endpoint
+	GetAllProductItems               endpoint.Endpoint
+	GetAllProductInformation         endpoint.Endpoint
+	GetAllProductVariantsByVariantID endpoint.Endpoint
+	GetAllVariantValuesByProductID   endpoint.Endpoint
+	UpdateProductItem                endpoint.Endpoint
 }
 
 func MakeProductEndpoints(svc ProductService) ProductEndpoints {
 	return ProductEndpoints{
-		CreateProduct:                   makeCreateProductEndpoint(svc),
-		CreateProductItem:               makeCreateProductItemEndpoint(svc),
-		GetAllProductItems:              makeGetAllProductItemEndpoint(svc),
-		GetAllProductVariantByVariantID: makeGetAllProductByVariantIDEndpoint(svc),
-		GetAllVariantValuesByProductID:  makeGetAllVariantValueByProductIDEndpoint(svc),
+		CreateProduct:                    makeCreateProductEndpoint(svc),
+		CreateProductItem:                makeCreateProductItemEndpoint(svc),
+		GetAllProductItems:               makeGetAllProductItemEndpoint(svc),
+		GetAllProductInformation:         makeGetAllProductEndpoint(svc),
+		GetAllProductVariantsByVariantID: makeGetAllProductVariantByVariantIDEndpoint(svc),
+		GetAllVariantValuesByProductID:   makeGetAllVariantValueByProductIDEndpoint(svc),
+		UpdateProductItem:                makeUpdateProductItemEndpoint(svc),
 	}
 }
 
@@ -61,9 +63,6 @@ func makeCreateProductItemEndpoint(svc ProductService) endpoint.Endpoint {
 func makeGetAllProductItemEndpoint(svc ProductService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		//req := request.(models.GetAllProductItemsReq)
-
-		fmt.Printf("FIne Heree")
-
 		productItems, err := svc.GetAllProductItems()
 		if err != nil {
 			return nil, err
@@ -72,10 +71,21 @@ func makeGetAllProductItemEndpoint(svc ProductService) endpoint.Endpoint {
 	}
 }
 
-func makeGetAllProductByVariantIDEndpoint(svc ProductService) endpoint.Endpoint {
+func makeGetAllProductEndpoint(svc ProductService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(models.GetAllProductItemsByVariantIDRequest)
-		productItems, err := svc.GetAllProductVariantByVariantIDs(req)
+		//req := request.(models.GetAllProductItemsReq)
+		productItems, err := svc.GetAllProduct()
+		if err != nil {
+			return nil, err
+		}
+		return productItems, err
+	}
+}
+
+func makeGetAllProductVariantByVariantIDEndpoint(svc ProductService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(models.GetAllProductItemsByVariantValueIDRequest)
+		productItems, err := svc.GetAllProductItemsByVariantValueID(req)
 		if err != nil {
 			return nil, err
 		}
@@ -94,6 +104,28 @@ func makeGetAllVariantValueByProductIDEndpoint(svc ProductService) endpoint.Endp
 	}
 }
 
+func makeGetAllProductItemByVariantIDEndpoint(svc ProductService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(models.GetAllProductItemsByVariantValueIDRequest)
+		productItems, err := svc.GetAllProductItemsByVariantValueID(req)
+		if err != nil {
+			return nil, err
+		}
+		return productItems, err
+	}
+}
+
+func makeUpdateProductItemEndpoint(svc ProductService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(models.UpdateProductItemRequest)
+		ok, err := svc.UpdateProductItem(req)
+		if err != nil {
+			return nil, err
+		}
+		return ok, err
+	}
+}
+
 func decodeCreateProductRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	var addProductRequest models.AddProductRequest
 	if e := json.NewDecoder(r.Body).Decode(&addProductRequest); e != nil {
@@ -109,7 +141,7 @@ func decodeCreateProductRequest(_ context.Context, r *http.Request) (request int
 	token := r.Header.Get("Authorization")
 	if token == "" {
 		//TODO return ERR
-		return nil, fmt.Errorf("no Authorization provided")
+		return nil, errNoAuthorizationToken
 	}
 	addProductRequest.JWT = token
 	return addProductRequest, nil
@@ -130,8 +162,7 @@ func decodeCreateProductItemRequest(_ context.Context, r *http.Request) (request
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		//TODO return ERR
-		return nil, fmt.Errorf("no Authorization provided")
+		return nil, errNoAuthorizationToken
 	}
 	addProductItemRequest.JWT = token
 
@@ -139,23 +170,26 @@ func decodeCreateProductItemRequest(_ context.Context, r *http.Request) (request
 }
 
 func decodeGetAllProductItemRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
-
 	return request, nil
 }
 
-func decodeGetAllProductByVariantIDRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
-	var getAllProductItemsByVariantIDRequest models.GetAllProductItemsByVariantIDRequest
-	if e := json.NewDecoder(r.Body).Decode(&getAllProductItemsByVariantIDRequest); e != nil {
+func decodeGetAllProductRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+	return request, nil
+}
+
+func decodeGetAllProductVariantsByVariantIDRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+	var getAllProductIVariantsByVariantIDRequest models.GetAllProductItemsByVariantValueIDRequest
+	if e := json.NewDecoder(r.Body).Decode(&getAllProductIVariantsByVariantIDRequest); e != nil {
 		return nil, e
 	}
 
 	//Validating the fields of the struct
 	v := validator.New()
-	err = v.Struct(getAllProductItemsByVariantIDRequest)
+	err = v.Struct(getAllProductIVariantsByVariantIDRequest)
 	if err != nil {
 		return nil, errJsonValidation
 	}
-	return getAllProductItemsByVariantIDRequest, nil
+	return getAllProductIVariantsByVariantIDRequest, nil
 }
 
 func decodeGetAllVariantByProductIDRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
@@ -171,6 +205,29 @@ func decodeGetAllVariantByProductIDRequest(_ context.Context, r *http.Request) (
 		return nil, errJsonValidation
 	}
 	return getAllVariantValueByProductIDRequest, nil
+}
+
+func decodeUpdateProductItemRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+	var updateProductItemRequest models.UpdateProductItemRequest
+	if e := json.NewDecoder(r.Body).Decode(&updateProductItemRequest); e != nil {
+		return nil, e
+	}
+
+	//Validating the fields of the struct
+	v := validator.New()
+	err = v.Struct(updateProductItemRequest)
+	if err != nil {
+		return nil, errJsonValidation
+	}
+
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		//TODO return ERR
+		return nil, errNoAuthorizationToken
+	}
+	updateProductItemRequest.JWT = token
+
+	return updateProductItemRequest, nil
 }
 
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
@@ -203,15 +260,27 @@ func NewHttpService(svcEndpoints ProductEndpoints, r *mux.Router) http.Handler {
 		encodeResponse,
 	))
 
+	r.Methods("GET").Path("/product/all").Handler(httptransport.NewServer(
+		svcEndpoints.GetAllProductInformation,
+		decodeGetAllProductRequest,
+		encodeResponse,
+	))
+
 	r.Methods("GET").Path("/product/item/variants").Handler(httptransport.NewServer(
-		svcEndpoints.GetAllProductVariantByVariantID,
-		decodeGetAllProductByVariantIDRequest,
+		svcEndpoints.GetAllProductVariantsByVariantID,
+		decodeGetAllProductVariantsByVariantIDRequest,
 		encodeResponse,
 	))
 
 	r.Methods("GET").Path("/product/variants").Handler(httptransport.NewServer(
 		svcEndpoints.GetAllVariantValuesByProductID,
 		decodeGetAllVariantByProductIDRequest,
+		encodeResponse,
+	))
+
+	r.Methods("PUT").Path("/product/item/update").Handler(httptransport.NewServer(
+		jwt.NewAuthMiddleware([]string{jwt.AdminScope})(svcEndpoints.UpdateProductItem),
+		decodeUpdateProductItemRequest,
 		encodeResponse,
 	))
 	return r

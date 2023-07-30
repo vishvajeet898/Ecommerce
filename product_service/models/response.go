@@ -45,3 +45,22 @@ type GetProductItemByIDResponse struct {
 type GetAllVariantValueByProductIDResponse struct {
 	ProductVariantValues []Product_Variants `json:"productVariantValues"`
 }
+
+type UpdateProductItemResponse struct {
+	Ok error `json:"ok"`
+}
+
+type UpdateProductResponse struct {
+	Ok error `json:"ok"`
+}
+
+type GetAllProductsResponse struct {
+	Products []Product `json:"products"`
+}
+
+type Product struct {
+	ProductID    string             `json:"productID"`
+	Name         string             `json:"name"`
+	Variants     []Product_Variants `json:"variants"`
+	ProductItems []ProductItems     `json:"productItems"`
+}

@@ -43,7 +43,7 @@ func (orderstore *OrderStore) CreateOrder(createOrderRequest models.CreateOrderR
 	}
 
 	if err := orderstore.OrderStore.Create(order); err != nil {
-		return nil, err
+		return nil, errUnableToCreateOrder
 	}
 	//Now add All Order Items in Order_Items
 
@@ -57,7 +57,7 @@ func (orderstore *OrderStore) CreateOrder(createOrderRequest models.CreateOrderR
 		}
 
 		if err := orderstore.OrderItemStore.CreateItem(orderItem); err != nil {
-			return nil, err
+			return nil, errUnableToCreateOrder
 		}
 	}
 
@@ -74,7 +74,7 @@ func (orderstore *OrderStore) GetOrderByOrderID(getOrderByOrderIDRequest models.
 
 	dbOrder, err := orderstore.OrderStore.GetOne(order)
 	if err != nil {
-		return nil, err
+		return nil, errOrderNotExist
 	}
 
 	return &models.GetOrderByOrderIDResponse{
@@ -90,7 +90,10 @@ func (orderstore *OrderStore) GetAllOrderByUserID(getAllOrderByUserIDRequest mod
 
 	dbOrders, err := orderstore.OrderStore.GetAll(order)
 	if err != nil {
-		return nil, err
+		return nil, errOrderNotExist
+	}
+	if len(dbOrders) == 0 {
+		return nil, errOrderNotExist
 	}
 	return &models.GetAllOrderByUserIDResponse{
 		Orders: dbOrders,
@@ -98,14 +101,21 @@ func (orderstore *OrderStore) GetAllOrderByUserID(getAllOrderByUserIDRequest mod
 }
 
 func (orderstore *OrderStore) CancelOrderByOrderId(cancelOrderByOrderIDRequest models.CancelOrderByOrderIDRequest) (*models.CancelOrderByOrderIDResponse, error) {
-	//Create Order
 	order := models.Orders{
 		OrderID: cancelOrderByOrderIDRequest.OrderID,
 	}
 
+	//First delete all Order Items
+	orderItem := models.OrderItems{
+		OrderID: cancelOrderByOrderIDRequest.OrderID,
+	}
+	if err := orderstore.OrderItemStore.DeleteAllItem(orderItem); err != nil {
+		return nil, errUnableToDeleteOrder
+	}
+
 	err := orderstore.OrderStore.Delete(order)
 	if err != nil {
-		return nil, err
+		return nil, errUnableToDeleteOrder
 	}
 	return &models.CancelOrderByOrderIDResponse{
 		Error: nil,

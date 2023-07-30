@@ -24,6 +24,6 @@ type CartItemStore interface {
 	Update(models.CartItems) error
 	Delete(models.CartItems) error
 	GetOne(models.CartItems) (models.CartItems, error)
-	GetAll(models.CartItems) ([]models.CartItems, error)
+	GetAll(QueryFilter) ([]models.CartItem_ProductItem, error)
 	DeleteAll(models.CartItems) error
 }

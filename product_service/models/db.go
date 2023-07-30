@@ -43,3 +43,9 @@ type Product_VariantValues struct {
 	Name                  string `gorm:"column:price"`
 	ProductVariantValueID string `gorm:"column:product_variant_value_id"`
 }
+
+type ProductItes_VariantValues struct {
+	ProductItemId string `gorm:"column:product_item_id"`
+	Price         string `gorm:"column:name"`
+	Name          string `gorm:"column:price"`
+}

@@ -16,7 +16,7 @@ type cartItem struct {
 	UserID        string `json:"userID"`
 }
 type GetAllCartItemResponse struct {
-	CartItems []CartItems `json:"cartItems"`
+	CartItems []CartItem_ProductItem `json:"cartItems"`
 }
 
 type UpdateCartItemResponse struct {
