@@ -20,6 +20,7 @@ type ProductEndpoints struct {
 	GetAllProductVariantsByVariantID endpoint.Endpoint
 	GetAllVariantValuesByProductID   endpoint.Endpoint
 	UpdateProductItem                endpoint.Endpoint
+	AddProductWithItem               endpoint.Endpoint
 }
 
 func MakeProductEndpoints(svc ProductService) ProductEndpoints {
@@ -31,6 +32,7 @@ func MakeProductEndpoints(svc ProductService) ProductEndpoints {
 		GetAllProductVariantsByVariantID: makeGetAllProductVariantByVariantIDEndpoint(svc),
 		GetAllVariantValuesByProductID:   makeGetAllVariantValueByProductIDEndpoint(svc),
 		UpdateProductItem:                makeUpdateProductItemEndpoint(svc),
+		AddProductWithItem:               makeCreateProductWithItemsEndpoint(svc),
 	}
 }
 
@@ -38,6 +40,17 @@ func makeCreateProductEndpoint(svc ProductService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.AddProductRequest)
 		resp, err := svc.CreateProduct(req)
+		if err != nil {
+			return nil, err
+		}
+		return resp, err
+	}
+}
+
+func makeCreateProductWithItemsEndpoint(svc ProductService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		req := request.(models.AddProductWithItemsRequest)
+		resp := svc.AddProductWithItems(req)
 		if err != nil {
 			return nil, err
 		}
@@ -137,6 +150,26 @@ func decodeCreateProductRequest(_ context.Context, r *http.Request) (request int
 	token := r.Header.Get("Authorization")
 	if token == "" {
 		//TODO return ERR
+		return nil, errNoAuthorizationToken
+	}
+	addProductRequest.JWT = token
+	return addProductRequest, nil
+}
+
+func decodeCreateProductWithItemsRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+	var addProductRequest models.AddProductWithItemsRequest
+	if e := json.NewDecoder(r.Body).Decode(&addProductRequest); e != nil {
+		return nil, e
+	}
+
+	//Validating the fields of the struct
+	v := validator.New()
+	err = v.Struct(addProductRequest)
+	if err != nil {
+		return nil, errJsonValidation
+	}
+	token := r.Header.Get("Authorization")
+	if token == "" {
 		return nil, errNoAuthorizationToken
 	}
 	addProductRequest.JWT = token
@@ -277,6 +310,12 @@ func NewHttpService(svcEndpoints ProductEndpoints, r *mux.Router) http.Handler {
 	r.Methods("PUT").Path("/product/item/update").Handler(httptransport.NewServer(
 		jwt.NewAuthMiddleware([]string{jwt.AdminScope})(svcEndpoints.UpdateProductItem),
 		decodeUpdateProductItemRequest,
+		encodeResponse,
+	))
+
+	r.Methods("POST").Path("/product/with/add").Handler(httptransport.NewServer(
+		jwt.NewAuthMiddleware([]string{jwt.AdminScope})(svcEndpoints.AddProductWithItem),
+		decodeCreateProductWithItemsRequest,
 		encodeResponse,
 	))
 	return r

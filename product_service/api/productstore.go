@@ -35,6 +35,7 @@ type ProductService interface {
 	GetAllVariantValueByProductID(request models.GetAllVariantValueByProductIDRequest) (*models.GetAllVariantValueByProductIDResponse, error)
 	UpdateProduct(models.UpdateProductRequest) (*models.UpdateProductResponse, error)
 	UpdateProductItem(models.UpdateProductItemRequest) (*models.UpdateProductItemResponse, error)
+	AddProductWithItems(models.AddProductWithItemsRequest) error
 }
 
 func (productstore *ProductStore) CreateProduct(addProductRequest models.AddProductRequest) (*models.AddProductResponse, error) {
@@ -310,4 +311,89 @@ func (productstore *ProductStore) GetAllProduct() (*models.GetAllProductsRespons
 	return &models.GetAllProductsResponse{
 		Products: product,
 	}, nil
+}
+
+func (productstore *ProductStore) AddProductWithItems(addProductWithItemsRequest models.AddProductWithItemsRequest) error {
+	variantMap := make(map[string]map[string]struct{})
+	variantValueMap := make(map[string]map[string]string)
+
+	//Creating Product
+	product := models.Products{
+		ProductID:   uuid.New().String(),
+		ProductName: addProductWithItemsRequest.Name,
+	}
+	if err := productstore.ProductStore.Create(product); err != nil {
+		return errUnableToAddProduct
+	}
+
+	for _, productItem := range addProductWithItemsRequest.ProductItems {
+		for _, variant := range productItem.Variants {
+
+			_, ok := variantMap[variant.VariantName]
+			if !ok {
+				variantMap[variant.VariantName] = make(map[string]struct{})
+			}
+
+			//map[ram][12GB:{},8GB:{}]
+			variantMap[variant.VariantName][variant.VariantValue] = struct{}{}
+
+		}
+	}
+
+	for variantName, variantValues := range variantMap {
+		variantValueMap[variantName] = make(map[string]string)
+		//Create variant
+		productVariant := models.ProductVariants{
+			ProductVariantID: uuid.New().String(),
+			ProductID:        product.ProductID,
+			VariantName:      variantName,
+		}
+		if err := productstore.ProductVariantStore.CreateVariant(productVariant); err != nil {
+			return errUnableToCreateVariant
+		}
+		fmt.Printf("%v Variant Created\n", productVariant.ProductVariantID)
+		for variantValue, _ := range variantValues {
+			//create variant Values
+			productVariantValue := models.ProductVariantValues{
+				ProductVariantValueID: uuid.New().String(),
+				ProductVariantID:      productVariant.ProductVariantID,
+				ProductVariantValue:   variantValue,
+			}
+			if err := productstore.ProductVariantValueStore.CreateVariantValue(productVariantValue); err != nil {
+				return errUnableToCreateVariantValue
+			}
+			variantValueMap[variantName][variantValue] = productVariantValue.ProductVariantValueID
+		}
+	}
+
+	//Now add Product Items
+	for _, productItem := range addProductWithItemsRequest.ProductItems {
+		addProductItem := models.ProductItems{
+			ProductItemId: uuid.New().String(),
+			ProductId:     product.ProductID,
+			Name:          productItem.Name,
+			Price:         productItem.Price,
+			Units:         productItem.Units,
+		}
+		if err := productstore.ProductItemStore.CreateItem(addProductItem); err != nil {
+			return errUnableToAddProductItem
+		}
+
+		for _, variant := range productItem.Variants {
+			valueIDMap := variantValueMap[variant.VariantName]
+			variantValueId := valueIDMap[variant.VariantValue]
+
+			productVariantCombination := models.ProductVariantCombinations{
+				ProductItemId:         addProductItem.ProductItemId,
+				ProductVariantValueID: variantValueId,
+			}
+
+			if err := productstore.ProductVariantCombinationStore.CreateCombination(productVariantCombination); err != nil {
+				return errUnableToAddProductItem
+			}
+
+		}
+	}
+
+	return nil
 }

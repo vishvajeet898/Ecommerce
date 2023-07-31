@@ -67,3 +67,17 @@ type GetProductItemByIDRequest struct {
 type GetAllVariantValueByProductIDRequest struct {
 	ProductID string `json:"productID"`
 }
+
+type AddProductWithItemsRequest struct {
+	JWT          string `json:"JWT,omitempty"`
+	Name         string `json:"name"`
+	ProductItems []struct {
+		Name     string `json:"name"`
+		Units    int    `json:"units"`
+		Price    string `json:"price"`
+		Variants []struct {
+			VariantName  string `json:"variantName"`
+			VariantValue string `json:"variantValue"`
+		} `json:"variants"`
+	} `json:"productItems"`
+}

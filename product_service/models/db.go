@@ -2,11 +2,11 @@ package models
 
 type Products struct {
 	ProductID   string `gorm:"primaryKey,column:product_id"`
-	ProductName string `gorm:"column:product_name,unique"`
+	ProductName string `gorm:"column:product_name"`
 }
 
 type ProductItems struct {
-	ProductItemId string `json:"ProductItemId" gorm:"unique,column:product_item_id"`
+	ProductItemId string `json:"ProductItemId" gorm:"column:product_item_id"`
 	ProductId     string `json:"ProductId" gorm:"primaryKey,column:product_id"`
 	Price         string `json:"Price" gorm:"column:price"`
 	Name          string `json:"Name" gorm:"primaryKey,column:name"`
@@ -14,13 +14,13 @@ type ProductItems struct {
 }
 
 type ProductVariants struct {
-	ProductVariantID string `gorm:"column:product_variant_id,unique"`
+	ProductVariantID string `gorm:"column:product_variant_id"`
 	ProductID        string `gorm:"primaryKey,column:product_id"`
 	VariantName      string `gorm:"primaryKey,column:variant_name"`
 }
 
 type ProductVariantValues struct {
-	ProductVariantValueID string `gorm:"column:product_variant_value_id,unique"`
+	ProductVariantValueID string `gorm:"column:product_variant_value_id"`
 	ProductVariantID      string `gorm:"primaryKey,column:product_variant_id"`
 	ProductVariantValue   string `gorm:"primaryKey,column:product_variant_value"`
 }

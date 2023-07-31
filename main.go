@@ -38,8 +38,8 @@ func main() {
 	println(token)
 	println()
 
-	//dbUrl := "postgres://vishwajeet:ecommerce@localhost:5434/EcommerceDB-New-New"
-	dbUrl := "postgres://vishwajeet:PpNpjrCAerMjyclJWNOsOe8dcBVuthPW@dpg-cj1982c07spjv9rabnp0-a.oregon-postgres.render.com/productdb_32q0"
+	dbUrl := "postgres://vishwajeet:ecommerce@localhost:5434/EcommerceDB-New-New"
+	//dbUrl := "postgres://vishwajeet:PpNpjrCAerMjyclJWNOsOe8dcBVuthPW@dpg-cj1982c07spjv9rabnp0-a.oregon-postgres.render.com/productdb_32q0"
 	db, _ := gorm.Open(postgres.Open( /*config.DBAddress*/ dbUrl), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})

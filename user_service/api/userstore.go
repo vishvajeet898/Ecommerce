@@ -22,11 +22,8 @@ func NewUserStoreApi(storeDependency store.Dependency) *UserStore {
 type UsersService interface {
 	SignUpUser(models.SignUpUserRequest) (string, error)
 	LoginUser(models.SignInUserRequest) (string, error)
-	//JWT
 	UpdateUser(models.UpdateUserRequest) error
-	//JWT
 	GetUserById(models.GetUserByIDRequest) (*models.Users, error)
-	//JWT
 	DeleteUser(models.DeleteUserByIDRequest) error
 }
 
