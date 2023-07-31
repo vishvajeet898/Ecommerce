@@ -110,7 +110,7 @@ func (cartstore *CartStore) UpdateCartItemByID(updateCartItemRequest models.Upda
 		CartItemID: updateCartItemRequest.CartItemID,
 	})
 
-	//If errr then item either does not exist
+	//If err then item either does not exist
 	if err != nil {
 		return nil, errItemNotFound
 	}
@@ -169,6 +169,7 @@ func (cartstore *CartStore) PlaceOrder(placeOrderRequest models.PlaceOrderReques
 
 		quantity, _ := strconv.Atoi(cartItem.Quantity)
 
+		//Reducing the quantity of Product Item
 		_, err = cartstore.OrderExternalDependency.ProductService.UpdateProductItem(models2.UpdateProductItemRequest{
 			ProductItemId: productItem.ProductItem.ProductItemId,
 			Units:         productItem.ProductItem.Units - quantity,

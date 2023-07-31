@@ -13,6 +13,7 @@ import (
 	store2 "Ecommerce/product_service/store"
 	"Ecommerce/user_service/api"
 	"Ecommerce/user_service/store"
+	"fmt"
 	mux2 "github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
 	"gorm.io/driver/postgres"
@@ -37,10 +38,13 @@ func main() {
 	println(token)
 	println()
 
-	dbUrl := "postgres://vishwajeet:ecommerce@localhost:5434/EcommerceDB-New-New"
+	//dbUrl := "postgres://vishwajeet:ecommerce@localhost:5434/EcommerceDB-New-New"
+	dbUrl := "postgres://vishwajeet:PpNpjrCAerMjyclJWNOsOe8dcBVuthPW@dpg-cj1982c07spjv9rabnp0-a.oregon-postgres.render.com/productdb_32q0"
 	db, _ := gorm.Open(postgres.Open( /*config.DBAddress*/ dbUrl), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
+
+	//AutoMigrate
 
 	//User Api entity
 	userEntity := api.NewUserStoreApi(store.Dependency{
@@ -92,6 +96,7 @@ func main() {
 
 	mux.Handle("/", api5.NewHttpService(addressEndpoints, SubRouter))
 
+	fmt.Printf("listening on 7171")
 	http.ListenAndServe(":7171", mux)
 
 }

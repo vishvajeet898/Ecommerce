@@ -31,6 +31,7 @@ type UsersService interface {
 }
 
 func (userstore *UserStore) SignUpUser(user models.SignUpUserRequest) (string, error) {
+	var jwtString string
 	v := validator.New()
 	err := v.Struct(user)
 	if err != nil {
@@ -52,16 +53,21 @@ func (userstore *UserStore) SignUpUser(user models.SignUpUserRequest) (string, e
 		return "", errInternalServerError
 	}
 
-	jwt, err := jwt.NewToken(dbUser.User_ID, jwt.UserScope)
+	if user.IsAdmin {
+		jwtString, err = jwt.NewToken(dbUser.User_ID, jwt.AdminScope)
+	} else {
+		jwtString, err = jwt.NewToken(dbUser.User_ID, jwt.UserScope)
+	}
 	if err != nil {
 		return "", errInternalServerError
 	}
 
-	return jwt, nil
+	return jwtString, nil
 }
 
 func (userstore *UserStore) LoginUser(user models.SignInUserRequest) (string, error) {
 	//Fetch user from DB
+	var jwtString string
 	dbUser, err := userstore.UsersStore.GetOne(models.Users{
 		Email: user.Email,
 	})
@@ -76,12 +82,17 @@ func (userstore *UserStore) LoginUser(user models.SignInUserRequest) (string, er
 	}
 
 	//generate jwt for user
-	jwt, err := jwt.NewToken(dbUser.User_ID, jwt.UserScope)
+	if dbUser.IsAdmin {
+		jwtString, err = jwt.NewToken(dbUser.User_ID, jwt.UserScope)
+	} else {
+		jwtString, err = jwt.NewToken(dbUser.User_ID, jwt.UserScope)
+	}
+
 	if err != nil {
 		return "", errInternalServerError
 	}
 
-	return jwt, nil
+	return jwtString, nil
 }
 
 func (userstore *UserStore) UpdateUser(user models.UpdateUserRequest) error {

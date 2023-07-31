@@ -2,31 +2,31 @@ package models
 
 type Products struct {
 	ProductID   string `gorm:"primaryKey,column:product_id"`
-	ProductName string `gorm:"column:product_name"`
+	ProductName string `gorm:"column:product_name,unique"`
 }
 
 type ProductItems struct {
-	ProductItemId string `json:"ProductItemId" gorm:"primaryKey,column:product_item_id"`
+	ProductItemId string `json:"ProductItemId" gorm:"unique,column:product_item_id"`
 	ProductId     string `json:"ProductId" gorm:"primaryKey,column:product_id"`
 	Price         string `json:"Price" gorm:"column:price"`
-	Name          string `json:"Name" gorm:"column:name"`
+	Name          string `json:"Name" gorm:"primaryKey,column:name"`
 	Units         int    `json:"Units" gorm:"column:units"`
 }
 
 type ProductVariants struct {
-	ProductVariantID string `gorm:"column:product_variant_id"`
+	ProductVariantID string `gorm:"column:product_variant_id,unique"`
 	ProductID        string `gorm:"primaryKey,column:product_id"`
 	VariantName      string `gorm:"primaryKey,column:variant_name"`
 }
 
 type ProductVariantValues struct {
-	ProductVariantValueID string `gorm:"column:product_variant_value_id"`
+	ProductVariantValueID string `gorm:"column:product_variant_value_id,unique"`
 	ProductVariantID      string `gorm:"primaryKey,column:product_variant_id"`
 	ProductVariantValue   string `gorm:"primaryKey,column:product_variant_value"`
 }
 
 type ProductVariantCombinations struct {
-	ProductVariantValueID string `gorm:"column:product_variant_value_id"`
+	ProductVariantValueID string `gorm:"primaryKey,column:product_variant_value_id"`
 	ProductItemId         string `gorm:"primaryKey,column:product_item_id"`
 }
 
