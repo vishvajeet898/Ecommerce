@@ -37,26 +37,22 @@ func MakeProductEndpoints(svc ProductService) ProductEndpoints {
 func makeCreateProductEndpoint(svc ProductService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.AddProductRequest)
-		err = svc.CreateProduct(req)
+		resp, err := svc.CreateProduct(req)
 		if err != nil {
 			return nil, err
 		}
-		return models.AddProductResponse{
-			Ok: nil,
-		}, err
+		return resp, err
 	}
 }
 
 func makeCreateProductItemEndpoint(svc ProductService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.AddProductItemRequest)
-		err = svc.CreateProductItem(req)
+		resp, err := svc.CreateProductItem(req)
 		if err != nil {
 			return nil, err
 		}
-		return models.AddProductItemResponse{
-			Ok: nil,
-		}, err
+		return resp, err
 	}
 }
 
@@ -242,13 +238,13 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 func NewHttpService(svcEndpoints ProductEndpoints, r *mux.Router) http.Handler {
 
 	//r := mux.NewRouter()
-	r.Methods("POST").Path("/products/add").Handler(httptransport.NewServer(
+	r.Methods("POST").Path("/product/add").Handler(httptransport.NewServer(
 		jwt.NewAuthMiddleware([]string{jwt.AdminScope})(svcEndpoints.CreateProduct),
 		decodeCreateProductRequest,
 		encodeResponse,
 	))
 
-	r.Methods("POST").Path("/products/item/add").Handler(httptransport.NewServer(
+	r.Methods("POST").Path("/product/item/add").Handler(httptransport.NewServer(
 		jwt.NewAuthMiddleware([]string{jwt.AdminScope})(svcEndpoints.CreateProductItem),
 		decodeCreateProductItemRequest,
 		encodeResponse,

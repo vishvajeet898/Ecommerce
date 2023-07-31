@@ -1,25 +1,25 @@
 package models
 
 type Variant struct {
-	VariantName   string   `json:"variantName"`
-	VariantValues []string `json:"variantValue"`
+	VariantName   string   `json:"variantName,required"`
+	VariantValues []string `json:"variantValue,required"`
 }
 
 type AddProductRequest struct {
 	JWT      string    `json:"JWT,omitempty"`
-	Name     string    `json:"name"`
-	Price    string    `json:"price"`
-	Units    int       `json:"units"`
-	Variants []Variant `json:"variants"`
+	Name     string    `json:"name,required"`
+	Price    string    `json:"price,required"`
+	Units    int       `json:"units,required"`
+	Variants []Variant `json:"variants,required"`
 }
 
 type AddProductItemRequest struct {
 	JWT             string   `json:"JWT,omitempty"`
-	Name            string   `json:"name"`
-	Price           string   `json:"price"`
-	ProductId       string   `json:"productId"`
-	Units           int      `json:"units"`
-	VariantValueIDs []string `json:"variantValueIDs"`
+	Name            string   `json:"name,required"`
+	Price           string   `json:"price,required"`
+	ProductId       string   `json:"productId,required"`
+	Units           int      `json:"units,required"`
+	VariantValueIDs []string `json:"variantValueIDs,required"`
 }
 
 type GetAllProductItemsByVariantValueIDRequest struct {

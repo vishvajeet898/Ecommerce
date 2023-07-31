@@ -13,7 +13,7 @@ import (
 const (
 	// JWTSecret TODO Fetch this from env
 	JWTSecret  = "123ACD"
-	JwtExpHour = 1
+	JwtExpHour = 4
 	JwtExpMin  = 0
 	JwtExpSec  = 30
 	UserScope  = "user"

@@ -167,6 +167,18 @@ func (cartstore *CartStore) PlaceOrder(placeOrderRequest models.PlaceOrderReques
 			return nil, errProductItemNotFound
 		}
 
+		quantity, _ := strconv.Atoi(cartItem.Quantity)
+
+		_, err = cartstore.OrderExternalDependency.ProductService.UpdateProductItem(models2.UpdateProductItemRequest{
+			ProductItemId: productItem.ProductItem.ProductItemId,
+			Units:         productItem.ProductItem.Units - quantity,
+			Name:          productItem.ProductItem.Name,
+			Price:         productItem.ProductItem.Price,
+		})
+		if err != nil {
+			return nil, errInternalServerError
+		}
+
 		productItems = append(productItems, modelOrder.ProductItems{
 			ProductItemID: productItem.ProductItem.ProductItemId,
 			Price:         productItem.ProductItem.Price,
@@ -174,6 +186,7 @@ func (cartstore *CartStore) PlaceOrder(placeOrderRequest models.PlaceOrderReques
 		})
 	}
 
+	//Creating order
 	orderRequest := modelOrder.CreateOrderRequest{
 		UserID:       placeOrderRequest.UserID,
 		Address:      placeOrderRequest.Address,

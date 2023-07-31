@@ -213,7 +213,7 @@ func NewHttpService(svcEndpoints UserEndpoints, r *mux.Router) http.Handler {
 		encodeResponse,
 	))
 
-	r.Methods("POST").Path("/users/update").Handler(httptransport.NewServer(
+	r.Methods("PUT").Path("/users/update").Handler(httptransport.NewServer(
 		jwt.NewAuthMiddleware([]string{jwt.UserScope})(svcEndpoints.UpdateUser),
 		decodeUpdateUserRequest,
 		encodeResponse,

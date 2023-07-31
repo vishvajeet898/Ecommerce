@@ -26,8 +26,8 @@ func NewProductStoreApi(storeDependency store.Dependency) *ProductStore {
 }
 
 type ProductService interface {
-	CreateProduct(models.AddProductRequest) error
-	CreateProductItem(models.AddProductItemRequest) error
+	CreateProduct(models.AddProductRequest) (*models.AddProductResponse, error)
+	CreateProductItem(models.AddProductItemRequest) (*models.AddProductItemResponse, error)
 	GetAllProduct() (*models.GetAllProductsResponse, error)
 	GetAllProductItems() (*models.GetAllProductItemsResponse, error)
 	GetProductItemByItemID(request models.GetProductItemByIDRequest) (*models.GetProductItemByIDResponse, error)
@@ -37,14 +37,14 @@ type ProductService interface {
 	UpdateProductItem(models.UpdateProductItemRequest) (*models.UpdateProductItemResponse, error)
 }
 
-func (productstore *ProductStore) CreateProduct(addProductRequest models.AddProductRequest) error {
+func (productstore *ProductStore) CreateProduct(addProductRequest models.AddProductRequest) (*models.AddProductResponse, error) {
 	//Create product
 	product := models.Products{
 		ProductID:   uuid.New().String(),
 		ProductName: addProductRequest.Name,
 	}
 	if err := productstore.ProductStore.Create(product); err != nil {
-		return errUnableToAddProduct
+		return nil, errUnableToAddProduct
 	}
 
 	for _, variant := range addProductRequest.Variants {
@@ -56,7 +56,7 @@ func (productstore *ProductStore) CreateProduct(addProductRequest models.AddProd
 			VariantName:      variant.VariantName,
 		}
 		if err := productstore.ProductVariantStore.CreateVariant(productVariant); err != nil {
-			return errUnableToCreateVariant
+			return nil, errUnableToCreateVariant
 		}
 
 		//Create Variant Value
@@ -67,16 +67,19 @@ func (productstore *ProductStore) CreateProduct(addProductRequest models.AddProd
 				ProductVariantValue:   variantValue,
 			}
 			if err := productstore.ProductVariantValueStore.CreateVariantValue(productVariantValue); err != nil {
-				return errUnableToCreateVariantValue
+				return nil, errUnableToCreateVariantValue
 			}
 		}
 
 	}
 
-	return nil
+	return &models.AddProductResponse{
+		ProductID: product.ProductID,
+		Ok:        nil,
+	}, nil
 }
 
-func (productstore *ProductStore) CreateProductItem(addProductItemRequest models.AddProductItemRequest) error {
+func (productstore *ProductStore) CreateProductItem(addProductItemRequest models.AddProductItemRequest) (*models.AddProductItemResponse, error) {
 	//Create ProductItems
 	productItem := models.ProductItems{
 		ProductItemId: uuid.New().String(),
@@ -86,7 +89,7 @@ func (productstore *ProductStore) CreateProductItem(addProductItemRequest models
 		Units:         addProductItemRequest.Units,
 	}
 	if err := productstore.ProductItemStore.CreateItem(productItem); err != nil {
-		return errUnableToAddProductItem
+		return nil, errUnableToAddProductItem
 	}
 
 	//Now for each variant add it in combination
@@ -98,11 +101,13 @@ func (productstore *ProductStore) CreateProductItem(addProductItemRequest models
 		}
 
 		if err := productstore.ProductVariantCombinationStore.CreateCombination(productVariantCombination); err != nil {
-			return errUnableToAddProductItem
+			return nil, errUnableToAddProductItem
 		}
 	}
 
-	return nil
+	return &models.AddProductItemResponse{
+		Ok: nil,
+	}, nil
 }
 
 func (productstore *ProductStore) GetAllProductItems() (*models.GetAllProductItemsResponse, error) {

@@ -216,7 +216,7 @@ func NewHttpService(svcEndpoints CartEndpoints, r *mux.Router) http.Handler {
 		encodeResponse,
 	))
 
-	r.Methods("POST").Path("/cart/update").Handler(httptransport.NewServer(
+	r.Methods("PUT").Path("/cart/update").Handler(httptransport.NewServer(
 		jwt.NewAuthMiddleware([]string{jwt.UserScope})(svcEndpoints.UpdateCartItemByID),
 		decodeUpdateCartItemByIDRequest,
 		encodeResponse,

@@ -1,7 +1,8 @@
 package models
 
 type AddProductResponse struct {
-	Ok error `json:"ok"`
+	ProductID string `json:"productID"`
+	Ok        error  `json:"ok"`
 }
 
 type AddProductItemResponse struct {

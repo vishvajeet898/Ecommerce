@@ -74,9 +74,7 @@ func makeDeleteAddressEndpoint(svc AddressService) endpoint.Endpoint {
 func makeGetAllAddressEndpoint(svc AddressService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.GetAllAddressByUserIDRequest)
-
 		req.UserID = ctx.Value("userID").(string)
-
 		response, err = svc.GetAllAddressByUserID(req)
 		if err != nil {
 			return nil, err
@@ -152,13 +150,6 @@ func decodeDeleteAddressRequest(_ context.Context, r *http.Request) (request int
 
 func decodeGetAllAddressRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	var getAllAddressByUserIDRequest models.GetAllAddressByUserIDRequest
-	if e := json.NewDecoder(r.Body).Decode(&getAllAddressByUserIDRequest); e != nil {
-		return nil, e
-	}
-
-	//Validating the fields of the struct
-	v := validator.New()
-	err = v.Struct(getAllAddressByUserIDRequest)
 	if err != nil {
 		return nil, errJsonValidation
 	}
@@ -190,19 +181,19 @@ func NewHttpService(svcEndpoints AddressEndpoints, r *mux.Router) http.Handler {
 		encodeResponse,
 	))
 
-	r.Methods("POST").Path("/address/update").Handler(httptransport.NewServer(
+	r.Methods("PUT").Path("/address/update").Handler(httptransport.NewServer(
 		jwt.NewAuthMiddleware([]string{jwt.UserScope})(svcEndpoints.UpdateAddress),
 		decodeUpdateAddressRequest,
 		encodeResponse,
 	))
 
-	r.Methods("POST").Path("/address/delete").Handler(httptransport.NewServer(
+	r.Methods("DELETE").Path("/address/delete").Handler(httptransport.NewServer(
 		jwt.NewAuthMiddleware([]string{jwt.UserScope})(svcEndpoints.DeleteAddress),
 		decodeDeleteAddressRequest,
 		encodeResponse,
 	))
 
-	r.Methods("POST").Path("/address/all").Handler(httptransport.NewServer(
+	r.Methods("GET").Path("/address/all").Handler(httptransport.NewServer(
 		jwt.NewAuthMiddleware([]string{jwt.UserScope})(svcEndpoints.GetAllAddress),
 		decodeGetAllAddressRequest,
 		encodeResponse,

@@ -28,8 +28,6 @@ type configuration struct {
 }
 
 func main() {
-	//TODO Db configs
-
 	var config configuration
 	err := envconfig.Process("MYAPP", &config)
 	if err != nil {
@@ -50,6 +48,7 @@ func main() {
 	})
 	userEndpoints := api.MakeUserEndpoints(userEntity)
 
+	//Product Api entity
 	productEntity := api2.NewProductStoreApi(store2.Dependency{
 		ProductStore:                   store2.NewEntityStore(db),
 		ProductItemStore:               store2.NewEntityStore(db),
@@ -59,12 +58,14 @@ func main() {
 	})
 	productEndpoints := api2.MakeProductEndpoints(productEntity)
 
+	//Order Api entity
 	orderEntity := api3.NewOrderStoreApi(store3.Dependency{
 		OrderItemStore: store3.NewEntityStore(db),
 		OrderStore:     store3.NewEntityStore(db),
 	})
 	orderEndpoints := api3.MakeOrderEndpoints(orderEntity)
 
+	//Cart Api entity
 	cartEntity := api4.NewCartStoreApi(store4.Dependency{
 		CartItemStore: store4.NewEntityStore(db),
 	}, externals.Dependency{
@@ -73,27 +74,23 @@ func main() {
 	})
 	cartEndPoints := api4.MakeOrderEndpoints(cartEntity)
 
+	//Address Api entity
 	addressEntity := api5.NewAddressStoreApi(store5.Dependency{
 		AddressStore: store5.NewEntityStore(db),
 	})
 	addressEndpoints := api5.MakeAddressEndpoints(addressEntity)
 
 	mux := mux2.NewRouter()
+	SubRouter := mux.PathPrefix("/").Subrouter()
+	mux.Handle("/", api.NewHttpService(userEndpoints, SubRouter))
 
-	userSubRouter := mux.PathPrefix("/user").Subrouter()
-	mux.Handle("/", api.NewHttpService(userEndpoints, userSubRouter))
+	mux.Handle("/", api2.NewHttpService(productEndpoints, SubRouter))
 
-	productSubRouter := mux.PathPrefix("/products").Subrouter()
-	mux.Handle("/", api2.NewHttpService(productEndpoints, productSubRouter))
+	mux.Handle("/", api3.NewHttpService(orderEndpoints, SubRouter))
 
-	orderSubRouter := mux.PathPrefix("/orders").Subrouter()
-	mux.Handle("/", api3.NewHttpService(orderEndpoints, orderSubRouter))
+	mux.Handle("/", api4.NewHttpService(cartEndPoints, SubRouter))
 
-	cartSubRouter := mux.PathPrefix("/cart").Subrouter()
-	mux.Handle("/", api4.NewHttpService(cartEndPoints, cartSubRouter))
-
-	addressSubRouter := mux.PathPrefix("/address").Subrouter()
-	mux.Handle("/", api5.NewHttpService(addressEndpoints, addressSubRouter))
+	mux.Handle("/", api5.NewHttpService(addressEndpoints, SubRouter))
 
 	http.ListenAndServe(":7171", mux)
 

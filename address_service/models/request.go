@@ -12,8 +12,8 @@ type AddAddressRequest struct {
 
 type UpdateAddressRequest struct {
 	JWT          string `json:"JWT,omitempty"`
-	UserID       string `json:"userID"`
 	AddressID    string `json:"addressID"`
+	UserID       string `json:"userID"`
 	AddressLine1 string `json:"addressLine1"`
 	State        string `json:"state"`
 	City         string `json:"city"`

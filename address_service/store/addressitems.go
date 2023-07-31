@@ -8,12 +8,12 @@ func (e *EntityStore) Create(address models.Addresses) error {
 }
 
 func (e *EntityStore) Update(address models.Addresses) error {
-	err := e.DB.Save(address).Error
+	err := e.DB.Where(models.Addresses{Address_ID: address.Address_ID}).Save(address).Error
 	return err
 }
 
 func (e *EntityStore) Delete(address models.Addresses) error {
-	err := e.DB.Delete(address).Error
+	err := e.DB.Where(models.Addresses{Address_ID: address.Address_ID}).Delete(address).Error
 	return err
 }
 

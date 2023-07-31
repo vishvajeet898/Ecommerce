@@ -20,20 +20,14 @@ func NewOrderStoreApi(storeDependency store.Dependency) *OrderStore {
 }
 
 type OrderService interface {
-	//JWT USER
 	CreateOrder(models.CreateOrderRequest) (*models.CreateOrderResponse, error)
-	//JWT USER
 	GetOrderByOrderID(models.GetOrderByOrderIDRequest) (*models.GetOrderByOrderIDResponse, error)
-	//JWT USER
 	GetAllOrderByUserID(models.GetAllOrderByUserIDRequest) (*models.GetAllOrderByUserIDResponse, error)
-	//JWT USER
 	CancelOrderByOrderId(models.CancelOrderByOrderIDRequest) (*models.CancelOrderByOrderIDResponse, error)
 }
 
 func (orderstore *OrderStore) CreateOrder(createOrderRequest models.CreateOrderRequest) (*models.CreateOrderResponse, error) {
 	//Create Order
-
-	//TODO user ID from JWT
 	order := models.Orders{
 		OrderID:   uuid.New().String(),
 		UserID:    createOrderRequest.UserID,
@@ -45,7 +39,7 @@ func (orderstore *OrderStore) CreateOrder(createOrderRequest models.CreateOrderR
 	if err := orderstore.OrderStore.Create(order); err != nil {
 		return nil, errUnableToCreateOrder
 	}
-	//Now add All Order Items in Order_Items
+	//Now Insert All Order Items in Order_Items
 
 	for _, productItem := range createOrderRequest.ProductItems {
 		orderItem := models.OrderItems{
