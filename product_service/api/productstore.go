@@ -35,7 +35,7 @@ type ProductService interface {
 	GetAllVariantValueByProductID(request models.GetAllVariantValueByProductIDRequest) (*models.GetAllVariantValueByProductIDResponse, error)
 	UpdateProduct(models.UpdateProductRequest) (*models.UpdateProductResponse, error)
 	UpdateProductItem(models.UpdateProductItemRequest) (*models.UpdateProductItemResponse, error)
-	AddProductWithItems(models.AddProductWithItemsRequest) error
+	AddProductWithItems(models.AddProductWithItemsRequest) (*models.AddProductWithItemResponse, error)
 }
 
 func (productstore *ProductStore) CreateProduct(addProductRequest models.AddProductRequest) (*models.AddProductResponse, error) {
@@ -313,7 +313,7 @@ func (productstore *ProductStore) GetAllProduct() (*models.GetAllProductsRespons
 	}, nil
 }
 
-func (productstore *ProductStore) AddProductWithItems(addProductWithItemsRequest models.AddProductWithItemsRequest) error {
+func (productstore *ProductStore) AddProductWithItems(addProductWithItemsRequest models.AddProductWithItemsRequest) (*models.AddProductWithItemResponse, error) {
 	variantMap := make(map[string]map[string]struct{})
 	variantValueMap := make(map[string]map[string]string)
 
@@ -323,7 +323,7 @@ func (productstore *ProductStore) AddProductWithItems(addProductWithItemsRequest
 		ProductName: addProductWithItemsRequest.Name,
 	}
 	if err := productstore.ProductStore.Create(product); err != nil {
-		return errUnableToAddProduct
+		return nil, errUnableToAddProduct
 	}
 
 	for _, productItem := range addProductWithItemsRequest.ProductItems {
@@ -349,7 +349,7 @@ func (productstore *ProductStore) AddProductWithItems(addProductWithItemsRequest
 			VariantName:      variantName,
 		}
 		if err := productstore.ProductVariantStore.CreateVariant(productVariant); err != nil {
-			return errUnableToCreateVariant
+			return nil, errUnableToCreateVariant
 		}
 		fmt.Printf("%v Variant Created\n", productVariant.ProductVariantID)
 		for variantValue, _ := range variantValues {
@@ -360,7 +360,7 @@ func (productstore *ProductStore) AddProductWithItems(addProductWithItemsRequest
 				ProductVariantValue:   variantValue,
 			}
 			if err := productstore.ProductVariantValueStore.CreateVariantValue(productVariantValue); err != nil {
-				return errUnableToCreateVariantValue
+				return nil, errUnableToCreateVariantValue
 			}
 			variantValueMap[variantName][variantValue] = productVariantValue.ProductVariantValueID
 		}
@@ -376,7 +376,7 @@ func (productstore *ProductStore) AddProductWithItems(addProductWithItemsRequest
 			Units:         productItem.Units,
 		}
 		if err := productstore.ProductItemStore.CreateItem(addProductItem); err != nil {
-			return errUnableToAddProductItem
+			return nil, errUnableToAddProductItem
 		}
 
 		for _, variant := range productItem.Variants {
@@ -389,11 +389,13 @@ func (productstore *ProductStore) AddProductWithItems(addProductWithItemsRequest
 			}
 
 			if err := productstore.ProductVariantCombinationStore.CreateCombination(productVariantCombination); err != nil {
-				return errUnableToAddProductItem
+				return nil, errUnableToAddProductItem
 			}
 
 		}
 	}
 
-	return nil
+	return &models.AddProductWithItemResponse{
+		Ok: nil,
+	}, nil
 }

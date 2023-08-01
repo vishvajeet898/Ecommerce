@@ -9,6 +9,10 @@ type AddProductItemResponse struct {
 	Ok error `json:"ok"`
 }
 
+type AddProductWithItemResponse struct {
+	Ok error `json:"ok"`
+}
+
 type GetAllProductItemsResponse struct {
 	Items []ProductItems `json:"items"`
 }

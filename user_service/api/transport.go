@@ -121,8 +121,10 @@ func decodeSignUpUserRequest(_ context.Context, r *http.Request) (request interf
 
 	//Validating the fields of the struct
 	v := validator.New()
+	fmt.Printf("%v\n", userSignUpRequest)
 	err = v.Struct(userSignUpRequest)
 	if err != nil {
+		fmt.Printf("%v", err.Error())
 		return nil, errJsonValidation
 	}
 	return userSignUpRequest, nil

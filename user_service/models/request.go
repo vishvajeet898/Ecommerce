@@ -3,7 +3,7 @@ package models
 type SignUpUserRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
-	IsAdmin  bool   `json:"isAdmin" validate:"required"`
+	IsAdmin  bool   `json:"isAdmin"`
 }
 
 type SignInUserRequest struct {

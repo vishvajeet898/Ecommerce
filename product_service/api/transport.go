@@ -50,7 +50,7 @@ func makeCreateProductEndpoint(svc ProductService) endpoint.Endpoint {
 func makeCreateProductWithItemsEndpoint(svc ProductService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(models.AddProductWithItemsRequest)
-		resp := svc.AddProductWithItems(req)
+		resp, err := svc.AddProductWithItems(req)
 		if err != nil {
 			return nil, err
 		}
